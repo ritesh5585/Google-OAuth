@@ -166,6 +166,10 @@ Must be the FIRST thing that runs. If you call it after, `process.env` values wi
 
 ---
 
+  Install this packages for setup
+
+npm i express passport passport-google-oauth20 express-session dotenv
+
 ### `passport.initialize()`
 ```js
 app.use(passport.initialize());
