@@ -1,29 +1,21 @@
 /**
- * Complete Authentication UI with all features
- * Includes: Login, Register, Dashboard, Profile, Password Management
+ * Complete Authentication UI System
+ * All pages: Login, Register, Dashboard, Profile, Forgot Password, Reset Password
  */
 function buildPage({ user = null, page = 'login', error = null, success = null } = {}) {
   const isLoggedIn = user && user.id;
 
-  // ============ PAGE ROUTER ============
-  const pages = {
-    login: renderLoginPage,
-    register: renderRegisterPage,
-    dashboard: renderDashboardPage,
-    profile: renderProfilePage,
-    forgot: renderForgotPasswordPage,
-    reset: renderResetPasswordPage,
-  };
-
-  return `<!DOCTYPE html>
+  // ============ BASE HTML TEMPLATE ============
+  const baseHTML = (content) => `
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${isLoggedIn ? 'Dashboard' : 'Auth System'}</title>
+  <title>${getPageTitle(page, isLoggedIn)}</title>
   
   <style>
-    /* ============ GLOBAL STYLES ============ */
+    /* ============ RESET & BASE ============ */
     * {
       margin: 0;
       padding: 0;
@@ -48,6 +40,10 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       animation: fadeIn 0.5s ease;
     }
 
+    .dashboard-container {
+      max-width: 600px;
+    }
+
     .card {
       background: rgba(30, 41, 59, 0.9);
       backdrop-filter: blur(10px);
@@ -62,22 +58,17 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       transform: translateY(-4px);
     }
 
-    .dashboard-container {
-      max-width: 600px;
-    }
-
     /* ============ ANIMATIONS ============ */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
-    /* ============ TYPOGRAPHY ============ */
+    /* ============ LOGO ============ */
     .logo {
       text-align: center;
       margin-bottom: 32px;
@@ -98,6 +89,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       margin-top: 4px;
     }
 
+    /* ============ TYPOGRAPHY ============ */
     h2 {
       font-size: 22px;
       font-weight: 700;
@@ -168,6 +160,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       align-items: center;
       justify-content: center;
       gap: 8px;
+      text-decoration: none;
     }
 
     .btn-primary {
@@ -178,10 +171,6 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
     .btn-primary:hover {
       transform: scale(1.02);
       box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
-    }
-
-    .btn-primary:active {
-      transform: scale(0.98);
     }
 
     .btn-secondary {
@@ -227,6 +216,10 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       width: auto;
     }
 
+    .btn-block {
+      width: 100%;
+    }
+
     /* ============ LINKS ============ */
     .auth-links {
       margin-top: 20px;
@@ -268,6 +261,30 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       background: rgba(34, 197, 94, 0.15);
       border: 1px solid rgba(34, 197, 94, 0.3);
       color: #86efac;
+    }
+
+    /* ============ DIVIDER ============ */
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      border-top: 1px solid #334155;
+    }
+
+    .divider::before {
+      margin-right: 16px;
+    }
+
+    .divider::after {
+      margin-left: 16px;
     }
 
     /* ============ DASHBOARD SPECIFIC ============ */
@@ -333,12 +350,6 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       margin-top: 4px;
     }
 
-    .divider {
-      border: none;
-      border-top: 1px solid #334155;
-      margin: 20px 0;
-    }
-
     .btn-group {
       display: flex;
       gap: 10px;
@@ -378,7 +389,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       <!-- ============ LOGO ============ -->
       <div class="logo">
         <h1>🔐 AuthPro</h1>
-        <p>${isLoggedIn ? 'Welcome back, ' + (user?.name || 'User') : 'Secure Authentication System'}</p>
+        <p>${getTagline(page, isLoggedIn, user)}</p>
       </div>
 
       <!-- ============ MESSAGES ============ -->
@@ -386,7 +397,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       ${success ? `<div class="message message-success">✅ ${success}</div>` : ''}
 
       <!-- ============ PAGE CONTENT ============ -->
-      ${renderPage()}
+      ${content}
 
     </div>
   </div>
@@ -395,7 +406,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
     // ============ CLIENT-SIDE VALIDATION ============
     document.querySelectorAll('form').forEach(form => {
       form.addEventListener('submit', function(e) {
-        const password = this.querySelector('input[type="password"]');
+        const password = this.querySelector('input[name="password"]');
         const confirm = this.querySelector('input[name="confirmPassword"]');
         
         if (password && confirm && password.value !== confirm.value) {
@@ -420,6 +431,10 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
 </html>`;
 
   // ============ PAGE RENDERER ============
+  const pageContent = renderPage();
+  return baseHTML(pageContent);
+
+  // ============ PAGE ROUTER ============
   function renderPage() {
     if (isLoggedIn) {
       if (page === 'profile') return renderProfilePage();
@@ -443,7 +458,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       <form action="/api/auth/login" method="POST">
         <div class="form-group">
           <label>Email Address</label>
-          <input type="email" name="email" placeholder="you@example.com" required />
+          <input type="email" name="email" placeholder="you@example.com" required autofocus />
         </div>
 
         <div class="form-group">
@@ -454,7 +469,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
         <button type="submit" class="btn btn-primary">Sign In</button>
       </form>
 
-      <div style="margin: 16px 0; text-align: center; color: #64748b; font-size: 13px;">or continue with</div>
+      <div class="divider">or continue with</div>
 
       <a href="/auth/google" class="btn btn-google">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -482,7 +497,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       <form action="/api/auth/register" method="POST">
         <div class="form-group">
           <label>Full Name</label>
-          <input type="text" name="fullname" placeholder="John Doe" required minlength="2" maxlength="50" />
+          <input type="text" name="fullname" placeholder="John Doe" required minlength="2" maxlength="50" autofocus />
         </div>
 
         <div class="form-row">
@@ -518,7 +533,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
         <button type="submit" class="btn btn-primary">Create Account</button>
       </form>
 
-      <div style="margin: 16px 0; text-align: center; color: #64748b; font-size: 13px;">or</div>
+      <div class="divider">or</div>
 
       <a href="/auth/google" class="btn btn-google">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
@@ -565,7 +580,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
         </div>
       </div>
 
-      <hr class="divider" />
+      <hr class="divider" style="border: none; border-top: 1px solid #334155; margin: 20px 0;" />
 
       <div class="btn-group">
         <a href="/profile" class="btn btn-secondary btn-sm">👤 View Profile</a>
@@ -615,7 +630,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       </div>
 
       <div class="btn-group">
-        <a href="/" class="btn btn-secondary btn-sm">← Back to Dashboard</a>
+        <a href="/dashboard" class="btn btn-secondary btn-sm">← Back to Dashboard</a>
         <form action="/api/auth/logout" method="POST" style="display:inline;">
           <button type="submit" class="btn btn-danger btn-sm">🚪 Sign Out</button>
         </form>
@@ -632,7 +647,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
       <form action="/api/auth/forgot-password" method="POST">
         <div class="form-group">
           <label>Email Address</label>
-          <input type="email" name="email" placeholder="you@example.com" required />
+          <input type="email" name="email" placeholder="you@example.com" required autofocus />
         </div>
 
         <button type="submit" class="btn btn-primary">Send Reset Link</button>
@@ -656,7 +671,7 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
         
         <div class="form-group">
           <label>New Password</label>
-          <input type="password" name="newPassword" placeholder="••••••••" required minlength="6" />
+          <input type="password" name="newPassword" placeholder="••••••••" required minlength="6" autofocus />
         </div>
 
         <div class="form-group">
@@ -671,6 +686,29 @@ function buildPage({ user = null, page = 'login', error = null, success = null }
         <a href="/">Back to Sign in</a>
       </div>
     `;
+  }
+
+  // ============ HELPERS ============
+  function getPageTitle(page, loggedIn) {
+    if (loggedIn) return 'Dashboard - AuthPro';
+    const titles = {
+      login: 'Sign In - AuthPro',
+      register: 'Sign Up - AuthPro',
+      forgot: 'Forgot Password - AuthPro',
+      reset: 'Reset Password - AuthPro',
+    };
+    return titles[page] || 'AuthPro';
+  }
+
+  function getTagline(page, loggedIn, user) {
+    if (loggedIn) return `Welcome back, ${user?.name || 'User'}!`;
+    const taglines = {
+      login: 'Secure Authentication System',
+      register: 'Create your account',
+      forgot: 'Reset your password',
+      reset: 'Set new password',
+    };
+    return taglines[page] || 'Authentication System';
   }
 }
 
